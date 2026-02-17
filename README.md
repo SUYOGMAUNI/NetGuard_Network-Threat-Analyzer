@@ -52,7 +52,6 @@ Balanced to 30,000 samples per class. 80/20 train-test split.
 | Test | 42,000 |
 
  Results
-
 =======================================================
   Accuracy : 99.47%
   Precision: 99.47%  (macro)
