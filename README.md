@@ -123,7 +123,7 @@ NetGuard/
 
 ```
 git clone https://github.com/SUYOGMAUNI/NetGuard_Network-Threat-Analyzer.git
-cd netguard
+cd NetGuard_Network-Threat-Analyzer
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
