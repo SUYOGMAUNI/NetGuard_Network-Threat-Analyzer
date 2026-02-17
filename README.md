@@ -109,7 +109,7 @@ Setup
 
 1. Clone & install
 
-git clone https://github.com/yourusername/netguard.git
+git clone https://github.com/SUYOGMAUNI/NetGuard_Network-Threat-Analyzer.git
 cd netguard
 python -m venv .venv
 .venv\Scripts\activate
