@@ -2,22 +2,25 @@
 
 A real-time network threat detection system powered by an ensemble ML model trained on the CICIDS2017 dataset. Features a live dashboard with WebSocket-based flow streaming, automated threat classification, and IP blocking.
 
-
-Features
-
-- ML Threat Classification — Random Forest + Histogram Gradient Boosting ensemble classifies flows into 7 categories in real time
-- Live Dashboard — WebSocket-powered UI with traffic charts, threat gauge, protocol breakdown, and alert feed
-- IP Blocking. — Manual and automatic IP blocking with persistent session state
-- Feature Importance Visualization — Top contributing features displayed per model
-- REST API — Full API for stats, predictions, blocked IPs, and model metadata
+![Python](https://img.shields.io/badge/Python-3.10+-blue) ![Flask](https://img.shields.io/badge/Flask-SocketIO-green) ![Scikit-learn](https://img.shields.io/badge/Scikit--learn-Ensemble-orange) ![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
 ---
 
-ML Model Performance
+## Features
 
-Trained on the full .CICIDS2017. dataset (2,830,743 flows across 8 capture days).
+- **ML Threat Classification** — Random Forest + Histogram Gradient Boosting ensemble classifies flows into 7 categories in real time
+- **Live Dashboard** — WebSocket-powered UI with traffic charts, threat gauge, protocol breakdown, and alert feed
+- **IP Blocking** — Manual and automatic IP blocking with persistent session state
+- **Feature Importance Visualization** — Top contributing features displayed per model
+- **REST API** — Full API for stats, predictions, blocked IPs, and model metadata
 
-Dataset
+---
+
+## ML Model Performance
+
+Trained on the full **CICIDS2017** dataset (2,830,743 flows across 8 capture days).
+
+### Dataset
 
 | File | Rows |
 |------|------|
@@ -29,9 +32,9 @@ Dataset
 | Thursday-WebAttacks | 170,366 |
 | Tuesday | 445,909 |
 | Wednesday | 692,703 |
-| Total | 2,830,743 |
+| **Total** | **2,830,743** |
 
-Label Mapping
+### Label Mapping
 
 | Raw Label | Mapped Class | Count |
 |-----------|-------------|-------|
@@ -42,7 +45,7 @@ Label Mapping
 | Bot / Infiltration | BOTNET | 2,002 |
 | Web Attack (Brute Force / XSS / SQLi) | WEB_ATTACK | 2,180 |
 
-Training
+### Training
 
 Balanced to 30,000 samples per class. 80/20 train-test split.
 
@@ -51,7 +54,9 @@ Balanced to 30,000 samples per class. 80/20 train-test split.
 | Train | 168,000 |
 | Test | 42,000 |
 
- Results
+### Results
+
+```
 =======================================================
   Accuracy : 99.47%
   Precision: 99.47%  (macro)
@@ -72,21 +77,25 @@ Balanced to 30,000 samples per class. 80/20 train-test split.
     accuracy                           0.99     42000
    macro avg       0.99      0.99      0.99     42000
 weighted avg       0.99      0.99      0.99     42000
+```
 
+> **Note:** SQL\_INJECT class was absent from the raw dataset and padded with synthetic samples. Metrics for that class do not reflect real-world detection capability.
 
-> Note: SQL\_INJECT class was absent from the raw dataset and padded with synthetic samples. Metrics for that class do not reflect real-world detection capability.
+---
 
- Tech Stack
+## Tech Stack
 
-- Backend:. Python, Flask, Flask-SocketIO
-- ML: Scikit-learn (RandomForestClassifier + HistGradientBoostingClassifier)
-- Packet Capture: Scapy (requires Npcap on Windows)
-- Frontend: Vanilla JS, Chart.js, Socket.IO client
-- Data: CICIDS2017 (Canadian Institute for Cybersecurity)
+- **Backend:** Python, Flask, Flask-SocketIO
+- **ML:** Scikit-learn (RandomForestClassifier + HistGradientBoostingClassifier)
+- **Packet Capture:** Scapy (requires Npcap on Windows)
+- **Frontend:** Vanilla JS, Chart.js, Socket.IO client
+- **Data:** CICIDS2017 (Canadian Institute for Cybersecurity)
 
+---
 
- Project Structure
+## Project Structure
 
+```
 NetGuard/
 ├── app.py
 ├── analyzer.py
@@ -104,36 +113,49 @@ NetGuard/
 ├── .env.example
 ├── requirements.txt
 └── README.md
+```
 
-Setup
+---
 
-1. Clone & install
+## Setup
 
+### 1. Clone & install
+
+```
 git clone https://github.com/SUYOGMAUNI/NetGuard_Network-Threat-Analyzer.git
 cd netguard
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
+```
 
-2. Set environment variable
+### 2. Set environment variable
 
+```
 set NETGUARD_SECRET_KEY=your-strong-random-key-here
+```
 
- 3. Train the model (optional — pre-trained model included)
+### 3. Train the model (optional — pre-trained model included)
 
 Download CICIDS2017 CSVs from the Canadian Institute for Cybersecurity and place them in data/cicids2017/
 
+```
 python train.py --data-dir data/cicids2017/
+```
 
-4. Run
+### 4. Run
 
+```
 python app.py
+```
 
 Open http://127.0.0.1:5000 in your browser.
 
-> Windows note:. For real packet capture, install Npcap and run as Administrator. Without it, the app runs in simulation mode using synthetic flows.
+> **Windows note:** For real packet capture, install Npcap and run as Administrator. Without it, the app runs in simulation mode using synthetic flows.
 
- API Reference
+---
+
+## API Reference
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -148,7 +170,9 @@ Open http://127.0.0.1:5000 in your browser.
 | POST | /api/unblock-ip | Unblock an IP address |
 | GET | /api/blocked-ips | List all blocked IPs |
 
-WebSocket Events
+---
+
+## WebSocket Events
 
 | Event | Direction | Payload |
 |-------|-----------|---------|
@@ -158,5 +182,13 @@ WebSocket Events
 | stats_snapshot | Server → Client | Summary stats |
 | request_stats | Client → Server | Triggers stats emission |
 
+---
+
+
+## License
+
+MIT
+
+---
 
 Built by [Suyog Mauni](https://suyogmauni.com.np) · 2025
