@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NetGuard — Network Threat Analyzer</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- Ambient background particles -->
+<div class="bg-grid"></div>
+<div class="bg-glow bg-glow--1"></div>
+<div class="bg-glow bg-glow--2"></div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <path d="M14 2L4 7v7c0 5.5 4.3 10.7 10 12 5.7-1.3 10-6.5 10-12V7L14 2z" stroke="#d4af37" stroke-width="1.5" fill="rgba(212,175,55,0.08)"/>
+        <path d="M10 14l3 3 6-6" stroke="#00ff88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="logo-text">
+      <span class="logo-main">NET<span class="logo-accent">GUARD</span></span>
+      <span class="logo-sub">THREAT INTELLIGENCE v2.1</span>
+    </div>
+  </div>
+
+  <div class="header-center">
+    <div class="status-pill" id="statusPill">
+      <span class="status-dot" id="statusDot"></span>
+      <span class="status-label" id="statusLabel">CONNECTING</span>
+    </div>
+  </div>
+
+  <div class="header-right">
+    <div class="creator-badge">
+      <div class="creator-avatar">SM</div>
+      <div class="creator-info">
+        <span class="creator-role">Created by</span>
+        <a href="https://suyogmauni.com.np" class="creator-name" target="_blank">Suyog Mauni</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- STATS ROW -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-icon stat-icon--gold">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    </div>
+    <div class="stat-body">
+      <div class="stat-label">Flows / sec</div>
+      <div class="stat-value" id="statPPS">0</div>
+      <div class="stat-sub" id="statPPSSub">Waiting for capture…</div>
+    </div>
+    <div class="stat-sparkline" id="sparkPPS"></div>
+  </div>
+
+  <div class="stat-card stat-card--danger">
+    <div class="stat-icon stat-icon--red">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <div class="stat-body">
+      <div class="stat-label">Threats Detected</div>
+      <div class="stat-value danger" id="statThreats">0</div>
+      <div class="stat-sub">Session total</div>
+    </div>
+  </div>
+
+  <div class="stat-card stat-card--warn">
+    <div class="stat-icon stat-icon--yellow">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+    </div>
+    <div class="stat-body">
+      <div class="stat-label">Blocked IPs</div>
+      <div class="stat-value warn" id="statBlocked">0</div>
+      <div class="stat-sub">Auto-blocked threats</div>
+    </div>
+  </div>
+
+  <div class="stat-card stat-card--good">
+    <div class="stat-icon stat-icon--green">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    </div>
+    <div class="stat-body">
+      <div class="stat-label">ML Accuracy</div>
+      <div class="stat-value good" id="statAccuracy">—</div>
+      <div class="stat-sub" id="statAccuracySub">Loading model…</div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN GRID -->
+<main class="main-grid">
+
+  <!-- Traffic Chart -->
+  <section class="panel panel--wide">
+    <div class="panel-header">
+      <div class="panel-title">
+        <span class="panel-title-dot"></span>
+        Live Traffic Monitor
+      </div>
+      <div class="controls">
+        <button class="btn-ctrl btn-start active" id="btnStart" onclick="startCapture()">
+          <svg width="10" height="10" viewBox="0 0 10 10"><polygon points="2,1 9,5 2,9" fill="currentColor"/></svg>
+          Start
+        </button>
+        <button class="btn-ctrl btn-stop" id="btnStop" onclick="stopCapture()">
+          <svg width="10" height="10" viewBox="0 0 10 10"><rect x="1" y="1" width="8" height="8" fill="currentColor"/></svg>
+          Stop
+        </button>
+      </div>
+    </div>
+    <canvas id="trafficChart" height="120"></canvas>
+  </section>
+
+  <!-- Threat Gauge -->
+  <section class="panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <span class="panel-title-dot"></span>
+        Threat Level
+      </div>
+    </div>
+    <div class="gauge-wrap">
+      <svg class="gauge-svg" viewBox="0 0 200 120">
+        <defs>
+          <linearGradient id="gGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%"   stop-color="#00ff88"/>
+            <stop offset="50%"  stop-color="#ffcc00"/>
+            <stop offset="100%" stop-color="#ff4444"/>
+          </linearGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <path d="M 20 105 A 80 80 0 0 1 180 105" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="14" stroke-linecap="round"/>
+        <path id="gaugeFill" d="M 20 105 A 80 80 0 0 1 180 105" fill="none" stroke="url(#gGrad)" stroke-width="14" stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="251" filter="url(#glow)"/>
+        <line id="gaugeNeedle" x1="100" y1="105" x2="100" y2="34" stroke="#ffffff" stroke-width="2" stroke-linecap="round" transform="rotate(-90 100 105)" opacity="0.9"/>
+        <circle cx="100" cy="105" r="6" fill="#0d0d1a" stroke="#d4af37" stroke-width="2"/>
+      </svg>
+      <div class="gauge-score" id="gaugeScore">0</div>
+      <div class="gauge-lbl" id="gaugeLbl">WAITING</div>
+    </div>
+    <div class="t-bars" id="threatBars"></div>
+  </section>
+
+  <!-- Flow Feed -->
+  <section class="panel panel--wide">
+    <div class="panel-header">
+      <div class="panel-title">
+        <span class="panel-title-dot panel-title-dot--pulse"></span>
+        Live Flow Feed
+      </div>
+      <div style="display:flex;gap:1rem;align-items:center;">
+        <span class="packet-count" id="pktCount">0 flows</span>
+        <button class="btn-ctrl" onclick="clearFeed()" style="padding:3px 12px;font-size:0.68rem;">Clear</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="pkt-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Source IP</th>
+            <th>Destination IP</th>
+            <th>Port</th>
+            <th>Proto</th>
+            <th>↑ Pkts</th>
+            <th>↓ Pkts</th>
+            <th>↑ Bytes</th>
+            <th>Classification</th>
+            <th>Confidence</th>
+          </tr>
+        </thead>
+        <tbody id="packetFeed"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Protocol Pie -->
+  <section class="panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <span class="panel-title-dot"></span>
+        Protocol Mix
+      </div>
+    </div>
+    <div class="proto-chart-wrap">
+      <canvas id="protoChart" height="160"></canvas>
+    </div>
+    <div class="proto-legend" id="protoLegend"></div>
+  </section>
+
+  <!-- Alerts -->
+  <section class="panel panel--full">
+    <div class="panel-header">
+      <div class="panel-title">
+        <span class="panel-title-dot panel-title-dot--red"></span>
+        Security Alerts
+      </div>
+      <div style="display:flex;gap:0.8rem;align-items:center;">
+        <button class="btn-ctrl" onclick="clearAlerts()" style="padding:3px 12px;font-size:0.68rem;">Clear</button>
+        <span class="badge-count" id="alertCount">0</span>
+      </div>
+    </div>
+    <div class="alert-list" id="alertList">
+      <div class="alert-empty">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:0.5rem;opacity:0.3"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <div>No alerts yet. Start capture to begin monitoring.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Blocked IPs -->
+  <section class="panel panel--full" id="blockedPanel" style="display:none;">
+    <div class="panel-header">
+      <div class="panel-title">
+        <span class="panel-title-dot panel-title-dot--red"></span>
+        Blocked IPs
+      </div>
+      <span class="badge-count" id="blockedCount">0</span>
+    </div>
+    <div class="blocked-list" id="blockedList"></div>
+  </section>
+
+  <!-- ML Model Stats -->
+  <section class="panel panel--full">
+    <div class="panel-header">
+      <div class="panel-title">
+        <span class="panel-title-dot panel-title-dot--purple"></span>
+        ML Model Statistics
+      </div>
+    </div>
+    <div class="ml-grid" id="mlGrid">
+      <div class="ml-card"><div class="ml-card-lbl">Loading</div><div class="ml-card-val">…</div></div>
+    </div>
+  </section>
+
+  <!-- Feature Importances -->
+  <section class="panel panel--full">
+    <div class="panel-header">
+      <div class="panel-title">
+        <span class="panel-title-dot panel-title-dot--cyan"></span>
+        Top Feature Importances
+      </div>
+      <span style="font-size:0.65rem;color:var(--text-dim);font-family:var(--mono);">RF + HGB Average</span>
+    </div>
+    <div id="featureImportances" class="feature-bars">
+      <div class="alert-empty">Loading feature importances…</div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">NET<span style="color:var(--green)">GUARD</span> v2.1</div>
+    <div class="footer-stack">Python · Scapy · Scikit-learn · Flask · Socket.IO</div>
+    <div class="footer-credit">
+      Built by <a href="https://suyogmauni.com.np" target="_blank">Suyog Mauni</a> &nbsp;·&nbsp; 2025
+    </div>
+  </div>
+</footer>
+
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
